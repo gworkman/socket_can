@@ -1,13 +1,18 @@
 defmodule SocketCan.Frame do
-  defstruct [:id, :data, :dlc]
+  defstruct [:id, :data, :timestamp]
 
-  def parse(raw) when is_binary(raw) do
-    <<id::size(32)-little, dlc::size(8), _pad::size(24), data::binary-size(8)>> = raw
+  def to_message(%__MODULE__{id: id, data: nil}), do: "#{Integer.to_string(id, 16)} 0"
 
-    %__MODULE__{id: id, data: data, dlc: dlc}
-  end
+  def to_message(%__MODULE__{id: id, data: data}) when is_binary(data) do
+    id_string = Integer.to_string(id, 16)
+    dlc = byte_size(data)
 
-  def to_binary(%__MODULE__{id: id, data: data, dlc: dlc}) when is_binary(data) do
-    <<id::size(32)-little, dlc::size(8), 0::size(24), data::binary-size(8)>>
+    data_string =
+      data
+      |> :erlang.binary_to_list()
+      |> Enum.map(&Integer.to_string(&1, 16))
+      |> Enum.join(" ")
+
+    "#{id_string} #{dlc} #{data_string}"
   end
 end
